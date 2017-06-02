@@ -7,7 +7,7 @@ import B from 'bluebird';
 import * as TeenProcess from 'teen_process';
 import xcode from 'appium-xcode';
 import * as nodeSimctl from 'node-simctl';
-import { killAllSimulators, endAllSimulatorDaemons, simExists, installSSLCert, uninstallSSLCert } from '../..';
+import { endAllSimulatorDaemons, simExists, installSSLCert, uninstallSSLCert } from '../..';
 import { devices } from '../assets/deviceList';
 import Simulator from '../../lib/simulator-xcode-6';
 import { fs } from 'appium-support';
@@ -17,28 +17,6 @@ import path from 'path';
 chai.should();
 chai.use(chaiAsPromised);
 const expect = chai.expect;
-
-const XCODE_VERSION_8 = {
-  versionString: '8.2.1',
-  versionFloat: 8.2,
-  major: 8,
-  minor: 2,
-  patch: 1
-};
-const XCODE_VERSION_7 = {
-  versionString: '7.1.1',
-  versionFloat: 7.1,
-  major: 7,
-  minor: 1,
-  patch: 1
-};
-const XCODE_VERSION_6 = {
-  versionString: '6.1.1',
-  versionFloat: 6.1,
-  major: 6,
-  minor: 1,
-  patch: 1
-};
 
 
 let assetsDir = `${process.cwd()}/test/assets`;
@@ -60,43 +38,6 @@ describe('util', () => {
     nodeSimctl.getDevices.restore();
   });
 
-  describe('killAllSimulators', () => {
-    it('should call exec once if pgrep does not find any running Simulator with Xcode8', async () => {
-      xcodeMock.expects('getVersion').once().withArgs(true).returns(B.resolve(XCODE_VERSION_8));
-      execStub.withArgs('pgrep').throws({code: 1});
-
-      await killAllSimulators();
-      execStub.calledOnce.should.be.true;
-    });
-    it('should call exec thrice if pgrep does find running Simulator with Xcode7 and shutdown succeeds', async () => {
-      xcodeMock.expects('getVersion').once().withArgs(true).returns(B.resolve(XCODE_VERSION_7));
-      execStub.withArgs('pgrep').returns(0);
-      execStub.withArgs('xcrun').returns(0);
-
-      await killAllSimulators();
-      execStub.calledThrice.should.be.true;
-    });
-    it('should call exec thrice if pgrep does find running Simulator with Xcode6 and shutdown fails', async () => {
-      xcodeMock.expects('getVersion').once().withArgs(true).returns(B.resolve(XCODE_VERSION_6));
-      execStub.withArgs('pgrep').returns(0);
-      execStub.withArgs('xcrun').throws();
-      execStub.withArgs('pkill').returns(0);
-
-      try {
-        await killAllSimulators(500);
-      } catch (e) {}
-      execStub.calledThrice.should.be.true;
-    });
-    it('should call exec thrice if pgrep and simctl fail with Xcode8', async () => {
-      xcodeMock.expects('getVersion').once().withArgs(true).returns(B.resolve(XCODE_VERSION_8));
-      execStub.withArgs('pgrep').throws({code: 3});
-      execStub.withArgs('xcrun').throws();
-      execStub.withArgs('pkill').throws({code: 1});
-
-      await killAllSimulators(500).should.eventually.be.rejected;
-      execStub.calledThrice.should.be.true;
-    });
-  });
 
   describe('endAllSimulatorDaemons', () => {
     it('should call exec five times to stop and remove each service', async () => {
